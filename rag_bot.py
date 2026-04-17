@@ -21,27 +21,19 @@ login(token=os.getenv("HF_TOKEN"))
 from docx import Document
 from pptx import Presentation
 
-# =========================
-# CONFIG
-# =========================
+
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# =========================
-# MODELS
-# =========================
+
 print("Loading models...")
 embedding_model = SentenceTransformer("intfloat/multilingual-e5-small")
 
-# =========================
-# FILES TO SAVE
-# =========================
+
 FAISS_FILE = "faiss_index.index"
 DOCS_FILE = "docs.pkl"
 FILES_RECORD = "files_record.pkl"
 
-# =========================
-# TRANSLATION
-# =========================
+
 def translate_to_english(text):
     try:
         return GoogleTranslator(source='auto', target='en').translate(text)
@@ -59,9 +51,7 @@ def translate_answer(text, target_lang):
     except:
         return text
 
-# =========================
-# LANGUAGE DETECTION
-# =========================
+
 def detect_language(text):
     try:
         lang = detect(text)
@@ -74,9 +64,7 @@ def detect_language(text):
     except:
         return "English"
 
-# =========================
-# CHAT MEMORY
-# =========================
+
 chat_history = []
 MAX_MEMORY = 5
 
@@ -88,16 +76,15 @@ def update_chat_history(q, a):
 def get_chat_history():
     return "\n".join([f"User: {q}\nAssistant: {a}" for q, a in chat_history])
 
-# =========================
-# FILE LOADERS
-# =========================
+
+
 def load_pdf(path):
     try:
         loader = PyPDFLoader(path)
         docs = loader.load()
         return [d.page_content for d in docs]
     except Exception as e:
-        print("❌ Error loading PDF:", path)
+        print(" Error loading PDF:", path)
         print("Reason:", e)
         return []
 
@@ -132,9 +119,7 @@ def load_file(path):
     else:
         return []
 
-# =========================
-# BUILD INDEX
-# =========================
+
 def build_index(paths):
 
     splitter = RecursiveCharacterTextSplitter(
@@ -172,9 +157,7 @@ def build_index(paths):
 
     return index, docs
 
-# =========================
-# AUTO LOAD FILES
-# =========================
+
 pdf_folder = "pdfs"
 
 paths = []
@@ -186,9 +169,7 @@ for file_name in os.listdir(pdf_folder):
         print("Loading file:", file_name)
         paths.append(file_path)
 
-# =========================
-# LOAD INDEX ONLY (FAST MODE)
-# =========================
+
 if os.path.exists(FAISS_FILE) and os.path.exists(DOCS_FILE):
 
     print("Loading saved FAISS index...")
@@ -201,7 +182,7 @@ if os.path.exists(FAISS_FILE) and os.path.exists(DOCS_FILE):
     print("Loaded successfully. Vectors:", index.ntotal)
 
 else:
-    print("⚠️ Index not found. Building index FIRST TIME...")
+    print(" Index not found. Building index FIRST TIME...")
 
     index, docs = build_index(paths)
 
@@ -210,22 +191,17 @@ else:
     with open(DOCS_FILE, "wb") as f:
         pickle.dump(docs, f)
 
-    print("✅ Index built and saved successfully")
+    print(" Index built and saved successfully")
 
-# =========================
-# INTERNET SEARCH FUNCTION
-# =========================
+
+
 def search_web(query):
     with DDGS() as ddgs:
         results = ddgs.text(query, max_results=3)
         return "\n".join([r["body"] for r in results])
 
-# =========================
-# rag_pipeline
-# =========================
-# =========================
-# rag_pipeline (FINAL FIXED VERSION)
-# =========================
+
+
 def rag_pipeline(question):
 
     q_emb = embedding_model.encode([question])
@@ -240,9 +216,8 @@ def rag_pipeline(question):
 
     best_score = distances[0][0]
 
-    # -------------------------
-    # NEW SMART DECISION LOGIC
-    # -------------------------
+    
+
     if best_score < 0.8:
         final_context = context
 
@@ -253,9 +228,9 @@ def rag_pipeline(question):
     else:
         final_context = search_web(question)
 
-    # -------------------------
-    # FINAL ANSWER
-    # -------------------------
+   
+
+
     answer = client.chat.completions.create(
         model="llama-3.1-8b-instant",
         messages=[
@@ -267,9 +242,9 @@ def rag_pipeline(question):
     return answer.choices[0].message.content
 
 
-# =========================
-# MAIN LOOP (SAFE VERSION)
-# =========================
+
+
+
 if __name__ == "__main__":
 
     while True:
@@ -296,8 +271,9 @@ if __name__ == "__main__":
         context = "\n".join([c["text"] for c in top_chunks])
 
         if not context.strip():
-            print("🌐 No data in PDFs. Searching internet...")
+            print(" No data in PDFs. Searching internet...")
             context = search_web(question)
+
 
         def is_context_useful(distances):
             return distances[0][0] < 0.8
@@ -306,9 +282,10 @@ if __name__ == "__main__":
 
         use_pdf = best_score < 0.8
 
+
         if use_pdf:
 
-            print("\n📄 Sources:")
+            print("\n Sources:")
             for c in top_chunks:
                 print("-", c["source"])
 
@@ -320,7 +297,7 @@ if __name__ == "__main__":
                 ]
             )
 
-            print("\n🤖 Answer:\n", answer.choices[0].message.content)
+            print("\n Answer:\n", answer.choices[0].message.content)
 
         else:
 
@@ -332,6 +309,6 @@ if __name__ == "__main__":
                 ]
             )
 
-            print("\n🤖 Answer:\n", answer.choices[0].message.content)
+            print("\n Answer:\n", answer.choices[0].message.content)
 
         update_chat_history(question, answer.choices[0].message.content)
