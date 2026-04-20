@@ -1,0 +1,6 @@
+.env
+faiss_index.index
+docs.pkl
+__pycache__/
+*.pyc
+pdfs/
