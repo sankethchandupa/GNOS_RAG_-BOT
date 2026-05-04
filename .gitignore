@@ -1,0 +1,14 @@
+venv/
+.venv/
+.env
+faiss_index.index
+docs.pkl
+__pycache__/
+*.pyc
+pdfs/
+.venv/
+venv/
+*.pyd
+*.dll
+.DS_Store
+Thumbs.db
