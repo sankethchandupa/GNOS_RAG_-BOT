@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: gnos-rag-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GEMINI_API_KEY_1
+        sync: false
+      - key: GEMINI_API_KEY_2
+        sync: false
+      - key: GROQ_API_KEY_1
+        sync: false
+      - key: GROQ_API_KEY_2
+        sync: false
+      - key: GROQ_API_KEY_3
+        sync: false
+      - key: HF_TOKEN
+        sync: false
