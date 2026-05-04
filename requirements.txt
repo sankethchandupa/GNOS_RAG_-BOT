@@ -26,3 +26,8 @@ newspaper3k
 schedule
 duckduckgo-search
 python-dotenv
+google-genai
+groq
+langdetect
+deep-translator
+ddgs
